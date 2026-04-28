@@ -80,6 +80,10 @@ h1 .grad{background:linear-gradient(120deg,var(--accent) 0%,#4feef8 60%,var(--bl
 #api-mode{flex:1}
 .btn-connect{font-family:var(--mono);font-size:.7rem;letter-spacing:.05em;color:var(--accent);text-transform:uppercase;border:1px solid rgba(91,255,168,.3);border-radius:6px;padding:4px 12px;transition:all .2s var(--ease);background:var(--accent-dim);cursor:pointer}
 .btn-connect:hover{background:rgba(91,255,168,.2);border-color:rgba(91,255,168,.5)}
+.api-status{display:none;margin:-10px 0 20px;padding:10px 14px;border-radius:var(--r);font-family:var(--mono);font-size:.72rem;line-height:1.45;border:1px solid var(--border)}
+.api-status.show{display:block}
+.api-status.ok{color:var(--accent);background:rgba(91,255,168,.08);border-color:rgba(91,255,168,.28)}
+.api-status.warn{color:var(--warning);background:rgba(255,204,102,.08);border-color:rgba(255,204,102,.25)}
 
 /* EXAMPLES */
 .examples-section{margin-bottom:20px;animation:fadeUp .65s .2s var(--ease) both}
@@ -317,6 +321,7 @@ footer strong{color:var(--text)}
     <span id="api-mode">— Demo mode</span>
     <button class="btn-connect" onclick="showApiHelp()">Connect →</button>
   </div>
+  <div class="api-status" id="api-status"></div>
 
   <!-- EXAMPLES -->
   <div class="examples-section">
@@ -719,18 +724,36 @@ function showApiHelp() {
     USE_DEMO = true;
     document.getElementById('api-dot').className = 'api-dot demo';
     document.getElementById('api-mode').textContent = '— Demo mode';
+    setApiStatus('Demo mode enabled. The built-in analyser will run on this page.', 'warn');
+    showToast('Demo mode enabled');
   } else {
     API_ENDPOINT = normalizeApiUrl(url.trim());
-    USE_DEMO = false;
     document.getElementById('api-url').textContent = API_ENDPOINT.replace(/https?:\/\//,'');
-    document.getElementById('api-dot').className = 'api-dot live';
-    document.getElementById('api-mode').textContent = '— Connected';
-    showToast('✓ Connected to backend');
+    if (/streamlit\.app/i.test(url)) {
+      USE_DEMO = true;
+      document.getElementById('api-dot').className = 'api-dot demo';
+      document.getElementById('api-mode').textContent = '— Streamlit saved';
+      setApiStatus('Streamlit URL saved. This Netlify page will still use the built-in analyser because Streamlit does not provide a /predict API endpoint.', 'warn');
+      showToast('Streamlit URL saved');
+    } else {
+      USE_DEMO = false;
+      document.getElementById('api-dot').className = 'api-dot live';
+      document.getElementById('api-mode').textContent = '— Connected';
+      setApiStatus('Connected successfully. Analyse Message will use this backend, with built-in fallback if it is unreachable.', 'ok');
+      showToast('Connected successfully');
+    }
   }
 }
 
 function normalizeApiUrl(url) {
   return /\/predict\/?$/.test(url) ? url : url.replace(/\/+$/, '') + '/predict';
+}
+
+function setApiStatus(message, type) {
+  const status = document.getElementById('api-status');
+  status.textContent = message;
+  status.className = 'api-status show ' + type;
+  status.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 function showToast(msg) {
