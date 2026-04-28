@@ -1,2 +1,5 @@
 [build]
   publish = "OJT-SEM-2-project"
+
+[functions]
+  directory = "OJT-SEM-2-project/netlify/functions"

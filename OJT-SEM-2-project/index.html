@@ -317,8 +317,8 @@ footer strong{color:var(--text)}
   <!-- API BANNER -->
   <div class="api-banner">
     <div class="api-dot demo" id="api-dot"></div>
-    <span>API: <span class="api-url" id="api-url">localhost:8501/predict</span></span>
-    <span id="api-mode">— Demo mode</span>
+    <span>API: <span class="api-url" id="api-url">/.netlify/functions/predict</span></span>
+    <span id="api-mode">— Connected</span>
     <button class="btn-connect" onclick="showApiHelp()">Connect →</button>
   </div>
   <div class="api-status" id="api-status"></div>
@@ -502,8 +502,8 @@ footer strong{color:var(--text)}
 <div id="toast"></div>
 
 <script>
-const API_ENDPOINT = 'https://your-username-sms-spam...streamlit.app/predict';
-let USE_DEMO = true;
+let API_ENDPOINT = '/.netlify/functions/predict';
+let USE_DEMO = false;
 
 const EXAMPLES = [
   "FREE prize! Call 08001234567 NOW to claim your reward! Limited time only, expires tonight.",
