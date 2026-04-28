@@ -107,6 +107,7 @@ def load_data():
 def load_ml_results():
     """Load the machine learning results JSON file."""
     json_path = find_file(
+        "OJT-SEM-2-project/outputs/ml_results.json",
         "outputs/ml_results.json",
         "ml_results.json",
         "../outputs/ml_results.json"
@@ -130,6 +131,7 @@ def load_ml_results():
 def load_model():
     """Try to load the saved spam classifier."""
     model_path = find_file(
+        "OJT-SEM-2-project/outputs/spam_model.pkl",
         "outputs/spam_model.pkl",
         "spam_model.pkl",
         "../outputs/spam_model.pkl"
