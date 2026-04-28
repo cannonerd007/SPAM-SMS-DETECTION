@@ -446,20 +446,26 @@ elif page == "📊  EDA Charts":
 
     with col1:
         # Pie chart
-        fig, ax = plt.subplots(figsize=(5, 5))
+        fig, ax = plt.subplots(figsize=(7, 5.5))
         sizes  = [len(spam), len(ham)]
         labels = [
-            f"Spam\n{len(spam):,} msgs\n({len(spam)/len(data)*100:.1f}%)",
-            f"Ham\n{len(ham):,} msgs\n({len(ham)/len(data)*100:.1f}%)"
+            f"Spam: {len(spam):,} messages ({len(spam)/len(data)*100:.1f}%)",
+            f"Ham: {len(ham):,} messages ({len(ham)/len(data)*100:.1f}%)"
         ]
-        ax.pie(
-            sizes, labels=labels,
+        wedges, _, autotexts = ax.pie(
+            sizes,
             colors=[SPAM_COLOR, HAM_COLOR],
             startangle=90,
-            textprops={"fontsize": 11, "fontweight": "bold"},
-            wedgeprops={"edgecolor": "white", "linewidth": 2}
+            autopct="%1.1f%%",
+            pctdistance=0.78,
+            textprops={"fontsize": 14, "fontweight": "bold", "color": "white"},
+            wedgeprops={"edgecolor": "white", "linewidth": 3, "width": 0.42}
         )
-        ax.set_title("Spam vs Ham Distribution", fontsize=13, fontweight="bold")
+        for text in autotexts:
+            text.set_fontsize(15)
+        ax.legend(wedges, labels, loc="center left", bbox_to_anchor=(1.02, 0.5),
+                  frameon=False, fontsize=12)
+        ax.set_title("Dataset Balance", fontsize=18, fontweight="bold", pad=16)
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -487,40 +493,58 @@ elif page == "📊  EDA Charts":
     st.subheader("2. Message Length — How Long Are Spam vs Ham Messages?")
 
     if "char_count" in data.columns:
-        fig, axes = plt.subplots(1, 2, figsize=(14, 4.5))
-
-        # Left: Histogram
-        for label, color in [("spam", SPAM_COLOR), ("ham", HAM_COLOR)]:
-            d = data[data["label"] == label]["char_count"]
-            axes[0].hist(d, bins=50, alpha=0.65, color=color,
-                         label=label.capitalize(), density=True)
-
         sp_med = spam["char_count"].median()
         hm_med = ham["char_count"].median()
-        axes[0].axvline(sp_med, color=SPAM_COLOR, linestyle="--", lw=2,
-                        label=f"Spam median: {sp_med:.0f} chars")
-        axes[0].axvline(hm_med, color=HAM_COLOR,  linestyle="--", lw=2,
-                        label=f"Ham median:  {hm_med:.0f} chars")
-        axes[0].set_title("Character Count Distribution", fontweight="bold")
-        axes[0].set_xlabel("Number of Characters")
-        axes[0].set_ylabel("Density (proportion of messages)")
-        axes[0].legend()
+        chart_max = int(min(max(data["char_count"].quantile(0.98), 180), 320))
+        bins = np.arange(0, chart_max + 20, 10)
 
-        # Right: Box plot
-        bp = axes[1].boxplot(
+        fig, ax = plt.subplots(figsize=(12, 5.8))
+        for label, color in [("spam", SPAM_COLOR), ("ham", HAM_COLOR)]:
+            d = data[data["label"] == label]["char_count"]
+            d_visible = d[d <= chart_max]
+            weights = np.ones(len(d_visible)) / len(d) * 100
+            ax.hist(d_visible, bins=bins, weights=weights, alpha=0.68,
+                    color=color, label=label.capitalize(),
+                    edgecolor="white", linewidth=0.8)
+
+        ax.axvline(sp_med, color=SPAM_COLOR, linestyle="--", lw=3,
+                   label=f"Spam median: {sp_med:.0f} chars")
+        ax.axvline(hm_med, color=HAM_COLOR, linestyle="--", lw=3,
+                   label=f"Ham median: {hm_med:.0f} chars")
+        ax.set_title("Most Spam Messages Are Much Longer Than Ham Messages",
+                     fontsize=18, fontweight="bold", pad=14)
+        ax.set_xlabel("Message length in characters", fontsize=13)
+        ax.set_ylabel("Messages in each length range (%)", fontsize=13)
+        ax.set_xlim(0, chart_max)
+        ax.tick_params(axis="both", labelsize=11)
+        ax.legend(fontsize=12, frameon=True)
+        ax.yaxis.grid(True, linestyle="--", alpha=0.35)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(9, 5.2))
+        bp = ax.boxplot(
             [spam["char_count"], ham["char_count"]],
             tick_labels=["Spam", "Ham"],
-            patch_artist=True, notch=True, widths=0.45,
+            patch_artist=True, notch=True, widths=0.5, showfliers=False,
             medianprops={"color": "black", "linewidth": 2.5}
         )
         bp["boxes"][0].set_facecolor(SPAM_COLOR); bp["boxes"][0].set_alpha(0.75)
         bp["boxes"][1].set_facecolor(HAM_COLOR);  bp["boxes"][1].set_alpha(0.75)
-        axes[1].set_title("Character Count Box Plot", fontweight="bold")
-        axes[1].set_ylabel("Number of Characters")
-        axes[1].yaxis.grid(True, linestyle="--", alpha=0.5)
-
-        plt.suptitle("How Long Are Spam vs Ham Messages?",
-                     fontsize=13, fontweight="bold")
+        ax.text(1, sp_med + 12, f"Median: {sp_med:.0f}", ha="center",
+                fontsize=12, fontweight="bold", color=SPAM_COLOR)
+        ax.text(2, hm_med + 12, f"Median: {hm_med:.0f}", ha="center",
+                fontsize=12, fontweight="bold", color="#27AE60")
+        ax.set_title("Typical Message Length (Extreme Outliers Hidden)",
+                     fontsize=17, fontweight="bold", pad=14)
+        ax.set_ylabel("Number of characters", fontsize=13)
+        ax.tick_params(axis="both", labelsize=12)
+        ax.yaxis.grid(True, linestyle="--", alpha=0.4)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
         plt.tight_layout()
         st.pyplot(fig)
         plt.close()
@@ -553,41 +577,42 @@ elif page == "📊  EDA Charts":
         srates = [spam[c].mean() * 100 for c in cols]
         hrates = [ham[c].mean()  * 100 for c in cols]
 
-        x     = np.arange(len(names))
-        width = 0.38
+        y      = np.arange(len(names))
+        height = 0.36
 
-        fig, ax = plt.subplots(figsize=(12, 5))
+        fig, ax = plt.subplots(figsize=(12, 6.2))
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        bars_s = ax.bar(x - width/2, srates, width,
-                        label="Spam", color=SPAM_COLOR, alpha=0.85, zorder=3)
-        bars_h = ax.bar(x + width/2, hrates, width,
-                        label="Ham",  color=HAM_COLOR,  alpha=0.85, zorder=3)
+        bars_s = ax.barh(y - height/2, srates, height,
+                         label="Spam", color=SPAM_COLOR, alpha=0.85, zorder=3)
+        bars_h = ax.barh(y + height/2, hrates, height,
+                         label="Ham",  color=HAM_COLOR,  alpha=0.85, zorder=3)
 
-        # Add percentage labels on top of bars
+        # Add percentage labels beside the bars
         for bar in bars_s:
-            h = bar.get_height()
-            if h > 0.5:
-                ax.text(bar.get_x() + bar.get_width()/2, h + 0.8,
-                        f"{h:.1f}%", ha="center", fontsize=10,
+            w = bar.get_width()
+            if w > 0.5:
+                ax.text(w + 0.8, bar.get_y() + bar.get_height()/2,
+                        f"{w:.1f}%", va="center", fontsize=11,
                         fontweight="bold", color=SPAM_COLOR)
         for bar in bars_h:
-            h = bar.get_height()
-            if h > 0.5:
-                ax.text(bar.get_x() + bar.get_width()/2, h + 0.8,
-                        f"{h:.1f}%", ha="center", fontsize=10,
+            w = bar.get_width()
+            if w > 0.5:
+                ax.text(w + 0.8, bar.get_y() + bar.get_height()/2,
+                        f"{w:.1f}%", va="center", fontsize=11,
                         fontweight="bold", color="#27AE60")
 
         ax.set_title("How Often Does Each Feature Appear in Spam vs Ham Messages?",
-                     fontsize=13, fontweight="bold")
-        ax.set_xlabel("Feature")
-        ax.set_ylabel("% of Messages Containing Feature")
-        ax.set_xticks(x)
-        ax.set_xticklabels(names, rotation=15, ha="right")
-        ax.set_ylim(0, max(srates) * 1.2)
-        ax.legend()
-        ax.yaxis.grid(True, linestyle="--", alpha=0.4, zorder=0)
+                     fontsize=18, fontweight="bold", pad=14)
+        ax.set_xlabel("% of messages containing the feature", fontsize=13)
+        ax.set_yticks(y)
+        ax.set_yticklabels(names, fontsize=12)
+        ax.set_xlim(0, max(max(srates), max(hrates), 1) * 1.28)
+        ax.invert_yaxis()
+        ax.legend(fontsize=12)
+        ax.tick_params(axis="x", labelsize=11)
+        ax.xaxis.grid(True, linestyle="--", alpha=0.4, zorder=0)
 
         plt.tight_layout()
         st.pyplot(fig)

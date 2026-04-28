@@ -497,7 +497,7 @@ footer strong{color:var(--text)}
 <div id="toast"></div>
 
 <script>
-const API_ENDPOINT = 'http://localhost:8501/predict';
+const API_ENDPOINT = 'https://your-username-sms-spam...streamlit.app/predict';
 let USE_DEMO = true;
 
 const EXAMPLES = [
@@ -584,7 +584,17 @@ async function analyse() {
   const btn = document.getElementById('analyse-btn');
   btn.classList.add('loading'); btn.disabled = true;
   try {
-    const result = USE_DEMO ? await demoPredict(message) : await apiPredict(message);
+    let result;
+    if (USE_DEMO) {
+      result = await demoPredict(message);
+    } else {
+      try {
+        result = await apiPredict(message);
+      } catch (apiErr) {
+        result = await demoPredict(message);
+        showToast('Backend unavailable — used built-in analyser');
+      }
+    }
     showResult(result, message);
     addToHistory(result, message);
     lastResult = result;
@@ -710,12 +720,17 @@ function showApiHelp() {
     document.getElementById('api-dot').className = 'api-dot demo';
     document.getElementById('api-mode').textContent = '— Demo mode';
   } else {
+    API_ENDPOINT = normalizeApiUrl(url.trim());
     USE_DEMO = false;
-    document.getElementById('api-url').textContent = url.trim().replace(/https?:\/\//,'');
+    document.getElementById('api-url').textContent = API_ENDPOINT.replace(/https?:\/\//,'');
     document.getElementById('api-dot').className = 'api-dot live';
     document.getElementById('api-mode').textContent = '— Connected';
     showToast('✓ Connected to backend');
   }
+}
+
+function normalizeApiUrl(url) {
+  return /\/predict\/?$/.test(url) ? url : url.replace(/\/+$/, '') + '/predict';
 }
 
 function showToast(msg) {
