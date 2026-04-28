@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "matplotlib": "^1.0.0",
+    "requirements": "^3.0.0"
+  }
+}
