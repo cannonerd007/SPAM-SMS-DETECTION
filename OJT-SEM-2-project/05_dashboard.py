@@ -86,6 +86,7 @@ def find_file(*possible_paths):
 def load_data():
     """Load the cleaned CSV file. Try a few possible locations."""
     csv_path = find_file(
+        "OJT-SEM-2-project/spam_cleaned.csv", 
         "outputs/spam_cleaned.csv",   # when running from project root
         "spam_cleaned.csv",           # when running from outputs folder
         "../outputs/spam_cleaned.csv" # one level up
