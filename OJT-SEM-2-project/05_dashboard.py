@@ -129,18 +129,23 @@ def load_ml_results():
 @st.cache_resource   # cache_resource is for heavy objects like ML models
 def load_model():
     """Try to load the saved spam classifier."""
+    model_path = find_file(
+        "outputs/spam_model.pkl",
+        "spam_model.pkl",
+        "../outputs/spam_model.pkl"
+    )
+    if model_path is None:
+        return None, "not_found", "Could not find outputs/spam_model.pkl."
+
     try:
         import joblib
-        model_path = find_file(
-            "outputs/spam_model.pkl",
-            "spam_model.pkl",
-            "../outputs/spam_model.pkl"
-        )
-        if model_path:
-            return joblib.load(model_path)
-    except Exception:
-        pass
-    return None   # model not available
+    except Exception as e:
+        return None, "missing_dependency", f"Could not import joblib: {e}"
+
+    try:
+        return joblib.load(model_path), "loaded", f"Loaded {model_path}."
+    except Exception as e:
+        return None, "load_failed", f"Found {model_path}, but could not load it: {type(e).__name__}: {e}"
 
 
 # ─── WORD CLEANING FUNCTION ───────────────────────────────────────────────────
@@ -265,7 +270,7 @@ def spam_verdict(signals, ml_model=None, message=""):
 # ─── LOAD DATA ────────────────────────────────────────────────────────────────
 data, data_error = load_data()
 ml_results       = load_ml_results()
-spam_model       = load_model()
+spam_model, model_status, model_message = load_model()
 
 # ─── HEADER ───────────────────────────────────────────────────────────────────
 st.title("📩 SMS Spam Data Exploration Dashboard")
@@ -302,6 +307,9 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Dataset:** {len(data):,} messages loaded")
 if spam_model:
     st.sidebar.success("✅ ML model loaded")
+elif model_status == "load_failed":
+    st.sidebar.error("⚠ ML model load failed\n(using rule-based checker)")
+    st.sidebar.caption(model_message)
 else:
     st.sidebar.warning("⚠ ML model not found\n(using rule-based checker)")
 
